@@ -5,7 +5,7 @@ using Domain.Primitives;
 
 namespace Domain.Entities.Users;
 
-public class User : Aggregate<UserId>
+public class User : AggregateRoot<UserId>
 {
     public Name Name { get; private set; }
     public Email Email { get; private set; }
