@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Domain.Entities.Primitives;
 using Domain.Entities.Users.ValueObjects;
@@ -22,32 +23,33 @@ public class AggregateRootEventInterceptor : SaveChangesInterceptor
         {
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
-
-        string aggregateName = string.Empty;
+        
         var outBoxMessages = dbContext.ChangeTracker.Entries<AggregateRoot<UserId>>()
-            .Select(x => x.Entity)
+            .Select(x => new 
+            {
+                x.Entity,
+                Events = x.Entity.GetDomainEvents(),
+                AggregateName = x.Entity.GetType().Name
+            })
             .SelectMany(x =>
             {
-                var events = x.GetDomainEvents();
-                x.ClearDomainEvents();
-                aggregateName = x.GetType().Name;
-                return events;
+                x.Entity.ClearDomainEvents();
+                return x.Events.Select(domainEvent => new OutboxMessage(
+                    Guid.NewGuid(),
+                    domainEvent.GetType().Name,
+                    JsonConvert.SerializeObject(
+                        domainEvent,
+                        new JsonSerializerSettings
+                        {
+                            TypeNameHandling = TypeNameHandling.All
+                        }
+                    ),
+                    DateTime.UtcNow,
+                    null,
+                    new StringBuilder("myServiceName.").Append(x.AggregateName).ToString()
+                ));
             })
-            .Select(domainEvent => new OutboxMessage(
-                        Guid.NewGuid(),
-                        domainEvent.GetType().Name,
-                        JsonConvert.SerializeObject(
-                            domainEvent,
-                            new JsonSerializerSettings
-                            {
-                                TypeNameHandling = TypeNameHandling.All
-                            }
-                        ),
-                        DateTime.UtcNow,
-                        null,
-                        "myServiceName."+aggregateName
-                    )
-            ).ToList();
+            .ToList();
         
         dbContext.Set<OutboxMessage>().AddRange(outBoxMessages);
         
