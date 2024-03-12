@@ -42,7 +42,7 @@ public class AggregateRootEventInterceptor : SaveChangesInterceptor
                     ),
                     DateTime.UtcNow,
                     null,
-                    new StringBuilder("myServiceName.").Append(x.AggregateName).ToString()
+                    x.AggregateName
                 ));
             })
             .ToList();
