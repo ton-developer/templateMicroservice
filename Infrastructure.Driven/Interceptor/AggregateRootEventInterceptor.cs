@@ -1,10 +1,6 @@
 using System.Text;
-using System.Text.Json;
 using Domain.Entities.Primitives;
-using Domain.Entities.Users.ValueObjects;
-using Domain.Primitives;
 using Infrastructure.Driven.Outbox;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Newtonsoft.Json;
 
