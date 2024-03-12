@@ -1,4 +1,3 @@
-using System.Text;
 using Domain.Entities.Primitives;
 using Infrastructure.Driven.Outbox;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -32,17 +31,11 @@ public class AggregateRootEventInterceptor : SaveChangesInterceptor
                 x.Entity.ClearDomainEvents();
                 return x.Events.Select(domainEvent => new OutboxMessage(
                     Guid.NewGuid(),
+                    x.AggregateName,
                     domainEvent.GetType().Name,
-                    JsonConvert.SerializeObject(
-                        domainEvent,
-                        new JsonSerializerSettings
-                        {
-                            TypeNameHandling = TypeNameHandling.All
-                        }
-                    ),
+                    JsonConvert.SerializeObject(domainEvent),
                     DateTime.UtcNow,
-                    null,
-                    x.AggregateName
+                    null
                 ));
             })
             .ToList();
