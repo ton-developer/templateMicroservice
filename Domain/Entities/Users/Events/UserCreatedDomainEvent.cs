@@ -3,4 +3,4 @@ using Domain.Primitives;
 
 namespace Domain.Entities.Users.Events;
 
-public sealed record UserCreatedDomainEvent(UserId Id, Name Name, Email Email) : IDomainEvent;
+public sealed record UserCreatedDomainEvent(AggregateId Id, Name Name, Email Email) : IDomainEvent;

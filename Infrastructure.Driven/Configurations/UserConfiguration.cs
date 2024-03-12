@@ -1,5 +1,6 @@
 using Domain.Entities.Users;
 using Domain.Entities.Users.ValueObjects;
+using Domain.Primitives;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -13,7 +14,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
         
         builder.HasKey(user => user.Id);
-        builder.Property(user => user.Id).HasConversion(UserIdValueConverter.Default);
+        builder.Property(user => user.Id).HasConversion(AggregateIdValueConverter.Default);
         
         builder.Property(user => user.Name).HasMaxLength(100).IsRequired();
         builder.Property(user => user.Name).HasConversion(NameValueConverter.Default);
@@ -22,16 +23,16 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     }
 }
 
-internal sealed class UserIdValueConverter: ValueConverter<UserId, Guid>
+internal sealed class AggregateIdValueConverter: ValueConverter<AggregateId, Guid>
 {
-    private UserIdValueConverter(ConverterMappingHints mappingHints)
+    private AggregateIdValueConverter(ConverterMappingHints mappingHints)
         : base(
-            id => id.Id,
-            value => new UserId(value),
+            id => id.Value,
+            value => new AggregateId(value),
             mappingHints)
     { }
 
-    public static UserIdValueConverter Default { get; }
+    public static AggregateIdValueConverter Default { get; }
         = new (new ConverterMappingHints());
 }
 

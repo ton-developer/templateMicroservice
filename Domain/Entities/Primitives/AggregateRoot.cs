@@ -2,15 +2,15 @@ using Domain.Primitives;
 
 namespace Domain.Entities.Primitives;
 
-public abstract class AggregateRoot<TId> where TId : AggregateId
+public abstract class AggregateRoot
 {
     private readonly List<IDomainEvent> _domainEvents = new();
-    protected AggregateRoot(TId id)
+    protected AggregateRoot(AggregateId id)
     {
         Id = id;
     }
 
-    public TId Id { get; init; }
+    public AggregateId Id { get; init; }
     
     public IReadOnlyCollection<IDomainEvent> GetDomainEvents() => _domainEvents.ToList();
     

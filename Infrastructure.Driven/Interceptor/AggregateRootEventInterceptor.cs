@@ -24,7 +24,7 @@ public class AggregateRootEventInterceptor : SaveChangesInterceptor
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
         
-        var outBoxMessages = dbContext.ChangeTracker.Entries<AggregateRoot<UserId>>()
+        var outBoxMessages = dbContext.ChangeTracker.Entries<AggregateRoot>()
             .Select(x => new 
             {
                 x.Entity,

@@ -1,6 +1,3 @@
 namespace Domain.Primitives;
 
-public abstract record AggregateId(Guid Id)
-{
-    
-}
+public record AggregateId(Guid Value);
