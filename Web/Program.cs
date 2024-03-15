@@ -1,34 +1,42 @@
 using Application.Abstractions.Data;
 using Domain.Abstractions;
 using Infrastructure.Driven;
+using Infrastructure.Driven.Interceptor;
 using Infrastructure.Driven.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Web.Behaviors;
+
+var applicationAssembly = typeof(Application.AssemblyReference).Assembly;
+var infrastructureAssembly = typeof(Infrastructure.Driven.AssemblyReference).Assembly;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-var applicationAssembly = typeof(Application.AssemblyReference).Assembly;
-
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddControllers();
+
 builder.Services.AddMediatR(config =>
 {
     config.RegisterServicesFromAssembly(applicationAssembly);
+    config.AddOpenBehavior(typeof(TransactionalCommandBehavior<,>));
 });
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddSingleton<AggregateRootEventInterceptor>();
+builder.Services.AddDbContext<ApplicationDbContext>(
+        (serviceProvider, options) =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    var interceptor = serviceProvider.GetRequiredService<AggregateRootEventInterceptor>();
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .AddInterceptors(interceptor);
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUnitOfWork>(factory => factory.GetRequiredService<ApplicationDbContext>());
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var app = builder.Build();
 
+// Migrate the database on startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

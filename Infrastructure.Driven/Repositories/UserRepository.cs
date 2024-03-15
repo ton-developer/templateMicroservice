@@ -1,6 +1,6 @@
 using Domain.Abstractions;
 using Domain.Entities.Users;
-using Domain.Entities.Users.ValueObjects;
+using Domain.Primitives;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Driven.Repositories;
@@ -14,7 +14,7 @@ public class UserRepository : IUserRepository
         _dbContext = applicationDbContext;
     }
 
-    public Task<User?> GetByIdAsync(UserId id, CancellationToken cancellationToken = default)
+    public Task<User?> GetByIdAsync(AggregateId id, CancellationToken cancellationToken = default)
     {
         return _dbContext.Set<User>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }

@@ -2,6 +2,7 @@ using Application.Users.Commands.CreateUser;
 using Application.Users.Queries.GetUserById;
 using Domain.Entities.Users;
 using Domain.Entities.Users.ValueObjects;
+using Domain.Primitives;
 using Infrastructure.Driver.Controllers.RequestResource;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,7 @@ public class UserController : ApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUser(Guid userId, CancellationToken cancellationToken)
     {
-        var query = new GetUserByIdQuery(new UserId(userId));
+        var query = new GetUserByIdQuery(new AggregateId(userId));
 
         var user = await Sender.Send(query, cancellationToken);
 
