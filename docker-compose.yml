@@ -12,6 +12,17 @@ services:
       - 5001:443
     depends_on:
       - microservice_template.db
+  microservice_template.web2:
+    image: ${DOCKER_REGISTRY-}microservice_template_web2
+    container_name: microservice_template_web2
+    build:
+      context: .
+      dockerfile: Web/Dockerfile
+    ports:
+      - 6000:8080
+      - 6001:443
+    depends_on:
+      - microservice_template.db
 
   microservice_template.db:
     image: postgres
