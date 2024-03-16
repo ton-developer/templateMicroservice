@@ -2,8 +2,11 @@ using Application.Abstractions.Data;
 using Domain.Abstractions;
 using Infrastructure.Driven;
 using Infrastructure.Driven.Interceptor;
+using Infrastructure.Driven.Jobs;
 using Infrastructure.Driven.Repositories;
+using Medallion.Threading.Postgres;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 using Web.Behaviors;
 
 var applicationAssembly = typeof(Application.AssemblyReference).Assembly;
@@ -33,6 +36,36 @@ builder.Services.AddDbContext<ApplicationDbContext>(
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<OutboxRepository>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    return new OutboxRepository(connectionString!);
+});
+
+builder.Services.AddScoped<PostgresDistributedLock>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    return new PostgresDistributedLock(new PostgresAdvisoryLockKey("JobLock", allowHashing: true), connectionString!);
+});
+
+builder.Services.AddQuartz(options =>
+{
+    var jobKey = JobKey.Create(nameof(OutboxMessageProcessorJob));
+    options.AddJob<OutboxMessageProcessorJob>(jobKey)
+        .AddTrigger(trigger =>
+            trigger
+                .ForJob(jobKey)
+                .WithSimpleSchedule(s => 
+                    s
+                        .WithInterval(TimeSpan.FromMilliseconds(250))
+                        .RepeatForever())
+            );
+});
+
+builder.Services.AddQuartzHostedService(options =>
+{
+    options.WaitForJobsToComplete = true;
+});
 
 var app = builder.Build();
 
@@ -57,5 +90,6 @@ app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
 });
+
 
 app.Run();

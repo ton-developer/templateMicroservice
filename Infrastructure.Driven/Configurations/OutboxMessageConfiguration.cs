@@ -11,5 +11,9 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
         builder.ToTable("outbox_messages");
 
         builder.HasKey(x => x.Id);
+        
+        builder.HasIndex(x => x.ProcessedOnUtc)
+            .HasFilter(""" "ProcessedOnUtc" IS NULL""")
+            .HasDatabaseName("IX_outbox_messages_processed_on_utc_null");
     }
 }

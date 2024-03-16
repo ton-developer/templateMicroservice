@@ -3,7 +3,7 @@ using MediatR;
 namespace Application.Abstractions;
 
 public interface ICommandHandler<in TCommand> : IRequestHandler<TCommand>
-    where TCommand : ICommand, IRequestHandler<TCommand>
+    where TCommand : ICommand
 {
     Task Handle(TCommand command, CancellationToken cancellationToken);
 }

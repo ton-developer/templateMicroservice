@@ -1,5 +1,4 @@
 using Application.Abstractions;
-using Domain.Entities;
 using Domain.Entities.Users;
 using Domain.Entities.Users.ValueObjects;
 
