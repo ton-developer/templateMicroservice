@@ -16,7 +16,8 @@ public class OutboxRepository
     public async Task<IEnumerable<OutboxMessage>> GetPendingMessagesToProcessAsync(CancellationToken cancellationToken)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
-        var sql = """SELECT * FROM public."outbox_messages" WHERE "ProcessedOnUtc" IS NULL""";
+        var sql =
+            """SELECT * FROM public."outbox_messages" WHERE "ProcessedOnUtc" IS NULL ORDER BY "OccurredOnUtc" LIMIT 100""";
         return await connection.QueryAsync<OutboxMessage>(sql, cancellationToken);
     }
     

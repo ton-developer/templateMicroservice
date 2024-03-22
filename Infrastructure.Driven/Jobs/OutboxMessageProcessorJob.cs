@@ -1,7 +1,7 @@
-using System.Data;
+using Confluent.Kafka;
+using Infrastructure.Driven.Outbox;
 using Infrastructure.Driven.Repositories;
 using Medallion.Threading.Postgres;
-using Newtonsoft.Json;
 using Quartz;
 
 namespace Infrastructure.Driven.Jobs;
@@ -17,18 +17,40 @@ public class OutboxMessageProcessorJob : IJob
         _outboxRepository = outboxRepository;
         _postgresDistributedLock = postgresDistributedLock;
     }
-    
 
     public async Task Execute(IJobExecutionContext context)
     {
         await using (await _postgresDistributedLock.AcquireAsync())
         {
+            Console.WriteLine("Start outbox job at:" + DateTime.UtcNow.ToLongTimeString());
+
             var pendingMessages = await _outboxRepository.GetPendingMessagesToProcessAsync(CancellationToken.None);
 
-            Console.WriteLine(DateTime.UtcNow.ToLongTimeString());
-            Console.WriteLine(JsonConvert.SerializeObject(pendingMessages, Formatting.Indented));
+            var outboxMessages = pendingMessages as OutboxMessage[] ?? pendingMessages.ToArray();
+            if (!outboxMessages.Any())
+            {
+                return;
+            }
+            
+            var config = KafkaProducerConfiguration.GetConfig();
+            using var producer = new ProducerBuilder<Null, string>(config).Build();
 
-            await _outboxRepository.MarkEventsAsProcessedAsync(pendingMessages.Select(x => x.Id).ToList());
+            foreach (var outboxMessage in outboxMessages.OrderBy(x => x.OccurredOnUtc))
+            {
+                var deliveryReport = 
+                    await producer.ProduceAsync("my-topic", new Message<Null, string> { Value = outboxMessage.Content });
+                if (deliveryReport.Status == PersistenceStatus.Persisted)
+                {
+                    outboxMessage.ProcessedOnUtc = DateTime.UtcNow;
+                    Console.WriteLine($"Produced message to {deliveryReport.Topic} partition {deliveryReport.Partition} @ offset {deliveryReport.Offset}");
+                }
+            }
+            
+            await _outboxRepository.MarkEventsAsProcessedAsync(
+                outboxMessages
+                    .Where(x => x.ProcessedOnUtc != null)
+                    .Select(x => x.Id)
+                    .ToList());
             
             await Task.Delay(500);
         }
